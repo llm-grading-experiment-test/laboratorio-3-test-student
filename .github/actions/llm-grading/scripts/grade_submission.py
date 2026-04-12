@@ -15,7 +15,8 @@ GitHub Models API:
 
 Environment variables (set by the GitHub Action):
     GITHUB_TOKEN: Native Actions token (used for GitHub Models auth)
-    LLM_MODEL: Model name (default: gpt-4o-mini)
+    GEMINI_API_KEY: Optional API key for Google Gemini free tier
+    LLM_MODEL: Model name (default: gemini-2.5-flash)
     RUBRIC_PATH: Path to rubric.json
     LAB_SPEC_PATH: Path to lab_specification.md
     GRADING_REFERENCE_PATH: Path to grading_reference.md (optional)
@@ -26,12 +27,13 @@ Environment variables (set by the GitHub Action):
 
 import json
 import os
+import re
 import sys
 import time
 from pathlib import Path
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
-
+from urllib.parse import urlencode
 
 # ---------------------------------------------------------------------------
 # Source collection & packaging
@@ -101,7 +103,7 @@ def render_prompt(template, submission_package, rubric_json, lab_spec,
 
 
 # ---------------------------------------------------------------------------
-# GitHub Models API (free tier, uses GITHUB_TOKEN)
+# API Calls: GitHub Models & Gemini
 # ---------------------------------------------------------------------------
 
 GITHUB_MODELS_ENDPOINT = "https://models.github.ai/inference/chat/completions"
@@ -144,6 +146,69 @@ def call_github_models(prompt, token, model, temperature, max_retries=3):
             raise
 
 
+def call_gemini(prompt, api_key, model, temperature, max_retries=3):
+    """Call Google Gemini API."""
+    query = urlencode({"key": api_key})
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?{query}"
+    
+    payload = json.dumps({
+        "contents": [
+            {
+                "role": "user",
+                "parts": [{"text": prompt}]
+            }
+        ],
+        "systemInstruction": {
+            "parts": [{"text": "Você é um professor de Ciência da Computação avaliando um laboratório de programação. Responda APENAS com JSON válido, sem markdown."}]
+        },
+        "generationConfig": {
+            "temperature": temperature,
+            "responseMimeType": "application/json",
+        },
+    }).encode("utf-8")
+
+    request = Request(
+        url,
+        data=payload,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+
+    for attempt in range(max_retries + 1):
+        try:
+            with urlopen(request, timeout=120) as response:
+                result = json.loads(response.read().decode("utf-8"))
+            
+            # Extract text from Gemini response
+            parts = []
+            for candidate in result.get("candidates", []):
+                for part in candidate.get("content", {}).get("parts", []):
+                    if text := part.get("text"):
+                        parts.append(text)
+            return "".join(parts)
+
+        except HTTPError as e:
+            body = e.read().decode("utf-8", errors="replace")
+            if e.code in {429, 503} and attempt < max_retries:
+                try:
+                    error_json = json.loads(body)
+                    wait = 10
+                    for detail in error_json.get("error", {}).get("details", []):
+                        if delay_str := detail.get("retryDelay"):
+                            wait = float(delay_str.rstrip("s"))
+                except:
+                    wait = min(2 ** attempt * 5, 60)
+                
+                print(f"  Rate limited ({e.code}), waiting {wait}s "
+                      f"(attempt {attempt + 1}/{max_retries})")
+                time.sleep(wait)
+                continue
+            
+            print(f"ERROR: Gemini API returned {e.code}: {body}", file=sys.stderr)
+            raise
+
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -151,7 +216,8 @@ def call_github_models(prompt, token, model, temperature, max_retries=3):
 def main():
     # Read environment
     token = os.environ.get("GITHUB_TOKEN", "")
-    model = os.environ.get("LLM_MODEL", "gpt-4o-mini")
+    gemini_key = os.environ.get("GEMINI_API_KEY", "")
+    model = os.environ.get("LLM_MODEL", "gemini-2.5-flash")
     rubric_path = os.environ.get("RUBRIC_PATH", "rubric.json")
     lab_spec_path = os.environ.get("LAB_SPEC_PATH", "lab_specification.md")
     grading_ref_path = os.environ.get("GRADING_REFERENCE_PATH", "")
@@ -162,6 +228,11 @@ def main():
     if not token:
         print("ERROR: GITHUB_TOKEN not set. This script requires the "
               "native GitHub Actions token.", file=sys.stderr)
+        sys.exit(1)
+        
+    is_gemini = model.startswith("gemini")
+    if is_gemini and not gemini_key:
+        print("ERROR: GEMINI_API_KEY not set. This is required for Gemini models.", file=sys.stderr)
         sys.exit(1)
 
     repo_root = Path(os.environ.get("GITHUB_WORKSPACE", "."))
@@ -227,10 +298,14 @@ def main():
         calibration_checks=calibration_checks,
     )
 
-    # Call GitHub Models
-    print(f"Calling GitHub Models ({model}, temperature={temperature})...")
+    # Call API
+    print(f"Calling LLM ({model}, temperature={temperature})...")
     print(f"Prompt size: {len(prompt)} characters")
-    response_text = call_github_models(prompt, token, model, temperature)
+    
+    if is_gemini:
+        response_text = call_gemini(prompt, gemini_key, model, temperature)
+    else:
+        response_text = call_github_models(prompt, token, model, temperature)
 
     # Parse response
     clean_text = response_text.strip()
