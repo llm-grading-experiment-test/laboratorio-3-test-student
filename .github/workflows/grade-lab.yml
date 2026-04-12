@@ -1,0 +1,63 @@
+# .github/workflows/grade-lab.yml
+#
+# Workflow para correção automática de laboratórios via LLM.
+#
+# Trigger: Pode ser disparado na deadline (schedule) ou manualmente.
+# Autenticação: Usa GITHUB_TOKEN nativo (sem API key externa).
+# LLM: GitHub Models API (gratuito).
+#
+# Para usar este workflow no repositório template da turma:
+# 1. Copie este arquivo para .github/workflows/grade-lab.yml
+# 2. Copie o conteúdo de integration/github-action/ para .github/actions/llm-grading/
+# 3. Copie os arquivos de rubrica e especificação para o repositório
+# 4. Ajuste os inputs abaixo conforme o laboratório
+
+name: Grade Lab Submission
+
+on:
+  # Trigger manual para testes
+  workflow_dispatch:
+
+  # Trigger automático na deadline
+  # schedule:
+  #   - cron: '0 3 * * *'  # Ajuste para a data da deadline
+
+  # Trigger quando o Feedback PR é criado (GitHub Classroom)
+  pull_request:
+    types: [opened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  models: read          # Necessário para GitHub Models API
+
+jobs:
+  grade:
+    runs-on: ubuntu-latest
+    # Só roda se o PR é o "Feedback" do GitHub Classroom
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.title == 'Feedback'
+
+    steps:
+      - name: Checkout student code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run LLM grading
+        uses: ./.github/actions/llm-grading
+        with:
+          llm_model: 'gpt-4o-mini'
+          rubric_path: '.grading/rubric.json'
+          lab_spec_path: '.grading/lab_specification.md'
+          source_roots: 'src'
+          source_extensions: '.java'
+          temperature: '0'
+
+      - name: Upload evaluation artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: evaluation-${{ github.event.pull_request.number || 'manual' }}
+          path: evaluation.json

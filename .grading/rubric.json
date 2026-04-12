@@ -1,0 +1,63 @@
+{
+  "rubric_ready": true,
+  "rubric_name": "Rubrica operacional alinhada a planilha oficial do Lab 03",
+  "rubric_version": "2025.1-filmnow-planilha-v3-sem-bonus",
+  "score_model": {
+    "criterion_scale": 10,
+    "total_formula": "mandatory_weighted_sum_only",
+    "total_max_score": 10.0,
+    "notes": "Cada criterio recebe nota de 0 a 10, como na planilha oficial. Nesta configuracao do experimento, apenas os criterios obrigatorios do lab entram na avaliacao. A nota final e a soma ponderada desses criterios na escala 0-10."
+  },
+  "notes": "Rubrica operacional derivada da planilha oficial, das diretrizes de correcao e do enunciado do FilmNow. Nesta rodada, os bonus do enunciado foram explicitamente removidos do escopo de avaliacao para LLM e monitores.",
+  "criteria": [
+    {
+      "id": "funcionalidade_basica",
+      "name": "Funcionalidade Basica",
+      "description": "Avalia o funcionamento das operacoes principais do lab, como cadastrar filme, exibir filmes, detalhar filme e manipular HotList. Erros localizados devem gerar desconto proporcional; so use faixa muito baixa quando a funcionalidade principal estiver ausente ou claramente incorreta. Diferencas puramente cosmeticas de mensagem, como acento, caixa ou ponto de exclamacao, nao devem gerar desconto por si so se o sentido permanece o mesmo.",
+      "max_score": 10,
+      "weight": 0.25
+    },
+    {
+      "id": "testes",
+      "name": "Testes",
+      "description": "Avalia testes JUnit de Filme e FilmNow. Diferencie ausencia quase total de testes, testes presentes mas incompletos e testes amplos. Nao puxe automaticamente para zero se houver evidencias reais de testes, mesmo que a cobertura ainda seja parcial.",
+      "max_score": 10,
+      "weight": 0.15
+    },
+    {
+      "id": "criacao_de_classes",
+      "name": "Criacao de Classes",
+      "description": "Avalia se as classes principais do lab foram criadas e modeladas de forma condizente com o problema. Para primeiro ano, valorize quando o estudante demonstra entendimento da ideia central de modelar Filme e FilmNow como classes separadas, mesmo com imperfeicoes localizadas.",
+      "max_score": 10,
+      "weight": 0.25
+    },
+    {
+      "id": "uso_de_referencias",
+      "name": "Uso de Referencias",
+      "description": "Avalia composicao, criacao de objetos e uso adequado de referencias entre as classes. Foque no entendimento de como uma classe usa objetos de outra, sem superpenalizar pequenos deslizes de implementacao se a ideia principal estiver correta.",
+      "max_score": 10,
+      "weight": 0.1
+    },
+    {
+      "id": "uso_de_array_colecoes",
+      "name": "Uso de Array ou Colecoes",
+      "description": "Avalia a estrutura usada para armazenar filmes e HotList, respeitando as restricoes do lab. Se a estrutura principal atende ao problema, pequenos detalhes de implementacao nao devem derrubar excessivamente o criterio.",
+      "max_score": 10,
+      "weight": 0.1
+    },
+    {
+      "id": "divisao_de_funcionalidades",
+      "name": "Divisao de Funcionalidades",
+      "description": "Avalia se as responsabilidades estao minimamente bem separadas entre interface, classe de dominio e gerenciador. Para primeiro ano, concentre o desconto em concentracao excessiva de regras em um unico lugar, mas reconheca quando ja existe alguma separacao correta.",
+      "max_score": 10,
+      "weight": 0.05
+    },
+    {
+      "id": "legibilidade_e_documentacao",
+      "name": "Legibilidade e Documentacao",
+      "description": "Avalia nomes, organizacao, comentarios e Javadoc publico. Nao confunda falta de acabamento com falta total de aprendizado: use desconto leve a moderado quando o codigo esta compreensivel, mesmo sem documentacao excelente.",
+      "max_score": 10,
+      "weight": 0.1
+    }
+  ]
+}

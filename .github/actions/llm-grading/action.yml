@@ -1,0 +1,59 @@
+name: 'LLM Lab Grading'
+description: 'Avalia laboratórios de programação com LLM via GitHub Models (gratuito)'
+author: 'Experimento LLM Grading'
+
+inputs:
+  llm_model:
+    description: 'Modelo da LLM (GitHub Models catalog)'
+    required: false
+    default: 'gpt-4o-mini'
+  rubric_path:
+    description: 'Caminho para a rubrica (rubric.json)'
+    required: true
+  lab_spec_path:
+    description: 'Caminho para o enunciado do lab'
+    required: true
+  grading_reference_path:
+    description: 'Caminho para a referência da planilha de correção'
+    required: false
+    default: ''
+  source_roots:
+    description: 'Diretórios de código-fonte (separados por vírgula)'
+    required: false
+    default: 'src'
+  source_extensions:
+    description: 'Extensões de arquivo (separadas por vírgula)'
+    required: false
+    default: '.java'
+  temperature:
+    description: 'Temperatura da LLM'
+    required: false
+    default: '0'
+
+outputs:
+  evaluation_json:
+    description: 'Caminho para o JSON da avaliação gerada'
+  total_score:
+    description: 'Nota total atribuída'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Grade submission via GitHub Models
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+        LLM_MODEL: ${{ inputs.llm_model }}
+        RUBRIC_PATH: ${{ inputs.rubric_path }}
+        LAB_SPEC_PATH: ${{ inputs.lab_spec_path }}
+        GRADING_REFERENCE_PATH: ${{ inputs.grading_reference_path }}
+        SOURCE_ROOTS: ${{ inputs.source_roots }}
+        SOURCE_EXTENSIONS: ${{ inputs.source_extensions }}
+        TEMPERATURE: ${{ inputs.temperature }}
+      run: python3 ${{ github.action_path }}/scripts/grade_submission.py
+
+    - name: Post PR review
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      run: python3 ${{ github.action_path }}/scripts/post_review.py

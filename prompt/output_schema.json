@@ -1,0 +1,117 @@
+{
+  "type": "object",
+  "required": ["submission_id", "evaluator_type", "criteria", "total_score", "total_max_score", "student_feedback", "feedback_items", "confidence"],
+  "properties": {
+    "submission_id": {
+      "type": "string",
+      "description": "Identificador anônimo da submissão (e.g., S01, S02)"
+    },
+    "evaluator_type": {
+      "type": "string",
+      "enum": ["human", "llm"],
+      "description": "Tipo do avaliador"
+    },
+    "criteria": {
+      "type": "array",
+      "description": "Avaliação por critério, conforme a rubrica do laboratório",
+      "items": {
+        "type": "object",
+        "required": ["criterion_id", "criterion_name", "score", "max_score", "justification", "evidence_refs", "deductions"],
+        "properties": {
+          "criterion_id": {
+            "type": "string",
+            "description": "ID do critério, conforme rubric.json"
+          },
+          "criterion_name": {
+            "type": "string",
+            "description": "Nome do critério"
+          },
+          "score": {
+            "type": "number",
+            "description": "Nota atribuída (0 a max_score)"
+          },
+          "max_score": {
+            "type": "integer",
+            "description": "Nota máxima do critério"
+          },
+          "justification": {
+            "type": "string",
+            "description": "Resumo curto da avaliação do critério"
+          },
+          "evidence_refs": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Referências a arquivos/métodos/testes que sustentam a nota"
+          },
+          "deductions": {
+            "type": "array",
+            "description": "Lista de descontos que explicam a perda de pontos",
+            "items": {
+              "type": "object",
+              "required": ["points_lost", "problem", "consequence", "how_to_fix", "evidence_refs"],
+              "properties": {
+                "points_lost": {
+                  "type": "number",
+                  "description": "Pontos perdidos neste desconto"
+                },
+                "problem": {
+                  "type": "string",
+                  "description": "Descrição concreta do problema"
+                },
+                "consequence": {
+                  "type": "string",
+                  "description": "Impacto do problema"
+                },
+                "how_to_fix": {
+                  "type": "string",
+                  "description": "Sugestão de correção"
+                },
+                "evidence_refs": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "description": "Localizações no código que sustentam o desconto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "total_score": {
+      "type": "number",
+      "description": "Nota final (soma ponderada dos critérios)"
+    },
+    "total_max_score": {
+      "type": "number",
+      "description": "Nota máxima possível"
+    },
+    "student_feedback": {
+      "type": "string",
+      "description": "Feedback textual completo para o estudante, em formato inline"
+    },
+    "feedback_items": {
+      "type": "array",
+      "description": "Itens de feedback estruturados (1 a 6 mais importantes)",
+      "items": {
+        "type": "object",
+        "required": ["criterion_id", "criterion_name", "problem", "consequence", "how_to_fix", "evidence_refs"],
+        "properties": {
+          "criterion_id": { "type": "string" },
+          "criterion_name": { "type": "string" },
+          "problem": { "type": "string" },
+          "consequence": { "type": "string" },
+          "how_to_fix": { "type": "string" },
+          "evidence_refs": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "confidence": {
+      "type": "string",
+      "enum": ["baixa", "media", "alta"],
+      "description": "Nível de confiança do avaliador"
+    }
+  }
+}
