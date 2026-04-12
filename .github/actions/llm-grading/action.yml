@@ -1,12 +1,15 @@
 name: 'LLM Lab Grading'
-description: 'Avalia laboratórios de programação com LLM via GitHub Models (gratuito)'
+description: 'Avalia laboratórios de programação com LLM'
 author: 'Experimento LLM Grading'
 
 inputs:
   llm_model:
-    description: 'Modelo da LLM (GitHub Models catalog)'
+    description: 'Modelo da LLM'
     required: false
-    default: 'gpt-4o-mini'
+    default: 'gemini-2.5-flash'
+  gemini_api_key:
+    description: 'API Key do Google Gemini (se usar modelo gemini)'
+    required: false
   rubric_path:
     description: 'Caminho para a rubrica (rubric.json)'
     required: true
@@ -39,10 +42,11 @@ outputs:
 runs:
   using: 'composite'
   steps:
-    - name: Grade submission via GitHub Models
+    - name: Grade submission via LLM
       shell: bash
       env:
         GITHUB_TOKEN: ${{ github.token }}
+        GEMINI_API_KEY: ${{ inputs.gemini_api_key }}
         LLM_MODEL: ${{ inputs.llm_model }}
         RUBRIC_PATH: ${{ inputs.rubric_path }}
         LAB_SPEC_PATH: ${{ inputs.lab_spec_path }}
